@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Removed
+
+- `.claude-plugin/marketplace.json`. It was not in Claude Code's marketplace format (no `owner`, no `plugins`), so `/plugin marketplace add` on this repo failed. Install the skill as a plugin through [akc-cycle](https://github.com/shimo4228/akc-cycle), which bundles it.
+
 ### Changed
 - Repository renamed to drop the `claude-skill-` prefix. This skill follows the
   open Agent Skills standard and is not Claude-specific; the old name implied
