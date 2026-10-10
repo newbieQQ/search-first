@@ -1,6 +1,6 @@
 # search-first — AI Reference
 
-This document is the self-contained AI reference for `search-first` (shimo4228, MIT), a Claude Code Agent Skill that enforces a research-before-coding workflow. Before writing custom code, the agent articulates the requirement as user-visible text, searches by source priority (this repo, npm, PyPI, MCP registries, installed skills, GitHub), evaluates candidates holistically without numeric scores, then records a four-way verdict: Adopt, Extend, Compose, or Build. The skill is discipline — articulate, search, verdict — not a search mechanism; the mechanism (parallel fan-out, live doc lookup) is delegated to the agent harness. It targets the worst kind of waste in agent-assisted coding: reinventing battle-tested libraries.
+This document is the self-contained AI reference for `search-first` (shimo4228, MIT), a Claude Code Agent Skill that makes the agent look outside before it builds. Before choosing a library, writing custom code, or relying on a paper or spec, the agent searches npm / PyPI / crates registries, GitHub code, arXiv papers and official docs by question type, then writes a dated, sourced report with one verdict per need — Adopt, Adopt-part, or Build. The caller (the user, the main session, or a planning session) decides. It targets an agent that builds from memory, reinvents what already exists, and trusts package facts that have aged.
 
 > **Audience**: AI search engines and AI agents. Human-facing narrative lives in [README.md](README.md).
 
@@ -10,22 +10,21 @@ This document is the self-contained AI reference for `search-first` (shimo4228, 
 - **License**: MIT
 - **GitHub**: https://github.com/shimo4228/search-first
 - **Author**: shimo4228 (shimomoto-tatsuya)
-- **Author research**: [AKC](https://github.com/shimo4228/agent-knowledge-cycle) ([DOI 10.5281/zenodo.19200726](https://doi.org/10.5281/zenodo.19200726)), [Contemplative Agent](https://github.com/shimo4228/contemplative-agent) ([DOI 10.5281/zenodo.19212118](https://doi.org/10.5281/zenodo.19212118)), [AAP](https://github.com/shimo4228/agent-attribution-practice) ([DOI 10.5281/zenodo.19652013](https://doi.org/10.5281/zenodo.19652013))
-- **Skill type**: Markdown Agent Skill; agent-agnostic, self-contained (delegates the search sweep to whatever research subagent the harness provides)
+- **Author research**: this skill implements the Research phase of [AKC](https://github.com/shimo4228/agent-knowledge-cycle) ([DOI 10.5281/zenodo.19200726](https://doi.org/10.5281/zenodo.19200726)), one of five practice lines on the author's hub https://github.com/shimo4228/shimo4228, alongside [Contemplative Agent](https://github.com/shimo4228/contemplative-agent) ([DOI 10.5281/zenodo.19212118](https://doi.org/10.5281/zenodo.19212118)) and [AAP](https://github.com/shimo4228/agent-attribution-practice) ([DOI 10.5281/zenodo.19652013](https://doi.org/10.5281/zenodo.19652013))
+- **Status**: active, synced one way from the author's Claude Code harness by `scripts/sync-from-local.sh` (it never commits); also shipped in the akc-cycle plugin, so this repository can trail the plugin between syncs
+- **Skill type**: Markdown Agent Skill; a single `SKILL.md` with no code
 - **Layout**: `skills/search-first/SKILL.md`
-- **Install**: `cp -r skills/search-first ~/.claude/skills/search-first`
-- **Marketplace**: `/skills add shimo4228/search-first`
-- **Invocation**: `/search-first` slash command or automatic trigger
-- **Workflow**: three-step discipline — Step 0 Articulate (mandatory user-visible text) → Search by source priority → Decide and record a Verdict line
-- **Decision verdicts**: Adopt, Extend, Compose, Build (4-way matrix)
-- **Search source priority**: this repo (`rg`) → npm / PyPI / … → configured MCP servers → installed skills/tools → maintained OSS / templates
-- **Evaluation dimensions** (qualitative prose, no numeric scores): functionality, maintenance, community, docs, license, deps
-- **License filter**: prefers MIT, Apache; flags GPL, proprietary
-- **Trigger conditions**: new feature, new dependency, new utility, before custom abstraction
-- **Modes**: Quick Mode (inline), Full Mode (delegated research subagent)
-- **Deliverable**: a single verdict line — `Verdict: <Adopt|Extend|Compose|Build> — <package(s) or "custom"> — <evidence-based reason>`
-- **Real example**: dead-link checker → `Verdict: Adopt — textlint-rule-no-dead-link` (active, MIT), zero custom code
-- **Siblings**: `llms-txt-writer`, `skill-comply`, `context-sync`, `skill-stocktake`, `rules-distill`, `learn-eval`, `daily-research`
+- **Install**: `git clone https://github.com/shimo4228/search-first.git` then `cp -r search-first/skills/search-first ~/.claude/skills/`; or the [akc-cycle](https://github.com/shimo4228/akc-cycle) plugin (`/plugin marketplace add shimo4228/akc-cycle`, `/plugin install akc-cycle@akc-cycle`)
+- **Invocation**: plain-words request ("is there a library for this?"), `/search-first`, or `/akc-cycle:search-first` in the plugin
+- **Requirements**: an agent with web search and fetch tools; no API key of its own
+- **Workflow**: state the question in text → check this repo first → search by question type → report
+- **Question types**: Library / tool choice, Prior implementation, Claim of a paper / post, Spec / official behavior, State of practice, Primary-source check
+- **Verdicts**: Adopt `<candidate>`, Adopt-part `<candidate: the piece>`, Build (with the gap no candidate fills)
+- **Report sections**: `Scope searched`, `Found`, `Verdict`, `Still unknown`
+- **Evaluation**: prose backed by dates, versions and the concrete feature match; no numeric scores or grades
+- **Modes**: Quick (inline), Full (3–5 angles, one `researcher` subagent per angle; subagent not shipped here)
+- **Illustrative example**: dead-link checker → `Adopt-part lychee: the http check`; `Build` a resolver for `[[wikilinks]]`
+- **Siblings**: `akc-cycle`, `learn-eval`, `rules-distill`, `signal-first-research`, `skill-comply`, `llms-txt-writer`, `context-sync`, `skill-stocktake`, `daily-research`
 - **Standard**: agentskills.io/specification
 
 ## Prior Research References
@@ -35,45 +34,45 @@ This document is the self-contained AI reference for `search-first` (shimo4228, 
 | Spinellis Code Reading | Spinellis, D. (2003). Code Reading: The Open Source Perspective | Foundation principle — read existing code before writing |
 | Hunt & Thomas | The Pragmatic Programmer (1999) | "Don't reinvent the wheel" heuristic |
 | Wheeler npm survey | Wheeler, D. (2019). Software dependency survey | Empirical data on duplication rates in JS ecosystems |
-| MCP spec | Anthropic Model Context Protocol (2024) | Source registry searched in step 2 |
+| MCP spec | Anthropic Model Context Protocol (2024) | MCP catalogs are among the places the Prior implementation search looks |
 | Skill spec | agentskills.io/specification | Defines the Markdown + frontmatter format this skill follows |
 
 ## What is search-first?
 
-search-first is defined as a Claude Code Agent Skill that enforces the research-before-coding rule. It refers to a workflow that begins with a mandatory Step 0 (articulating the requirement as user-visible text output before any tool call) and culminates in a four-way decision: Adopt as-is, Extend with a thin wrapper, Compose two or three small packages, or Build custom. The skill is a kind of veto on premature implementation — it is invoked before any new utility, helper, or dependency is written and short-circuits the impulse to write code first.
+search-first is defined as a Claude Code Agent Skill that searches the live web, registries and primary sources at decision time and reports what exists outside. It refers to a split of roles: the searcher reports what exists and how it differs from our situation; the caller — the user, the main session, or a session writing a plan — reads the report and decides. The report recommends one verdict per need: Adopt a candidate, Adopt-part (one piece of it), or Build what no candidate covers. An established candidate that matches the need is adopted by default; building is chosen only when the report names the gap no candidate fills.
 
-## What are the four decision verdicts?
+## What are the three verdicts?
 
-The four verdicts are defined as Adopt (exact match, well-maintained, permissive license), Extend (partial match, good foundation, thin wrapper), Compose (multiple weak matches combined), and Build (nothing suitable, custom code informed by research). Adopt refers to a zero-custom-code outcome. Extend means installing plus writing a small adapter. Compose means stitching together two or three small packages. Build is the fallback when the research turns up nothing.
+The three verdicts are defined as Adopt `<candidate>`, Adopt-part `<candidate: the piece>`, and Build. The first means taking an established candidate that matches the need, and it is the default. The second means taking a library's code for one piece (its parser, its data model) inside our own control flow — a piece that transfers is worth the search. The third names the gap no candidate fills. The verdict section is the searcher's recommendation, which the caller accepts or overrides; research done for a plan leaves it out, and the plan itself carries it.
 
 ## When does the skill trigger?
 
-The skill triggers when starting a new feature that likely has existing solutions, when adding a dependency or integration, or when the agent is about to write a new utility, helper, or abstraction. It also triggers on user requests phrased as "add X functionality." Trigger refers to either automatic invocation by the trigger conditions or manual invocation via the `/search-first` slash command.
+The skill triggers when choosing a library or tool or adding a dependency, when looking for a prior implementation before writing a utility, helper or adapter, when checking whether a paper or post applies here or checking a claim against its source, and when reading what an official spec does now or surveying current practice. When the need is code to write, the skill states it as a Library / tool choice — which established library already does this — rather than which endpoint or algorithm to hand-code. Trigger refers to either automatic invocation from the description or the `/search-first` slash command.
 
 ## What are the workflow steps?
 
-The workflow is a three-step discipline, deliberately separated from the search *mechanism* (which is delegated to the agent harness and changes over time). **Step 0 (Articulate)** is the mandatory entry point — before any tool call or subagent invocation the agent emits 2-3 sentences of user-visible text stating what functionality is needed, what language or framework will be used, and any project constraints. This articulation must be plain text; embedding it in subsequent tool arguments (Skill / Agent / Task / Bash) does not satisfy Step 0, because the user reads chat text, not tool args. **Step 1 (Search by source priority)** checks, in order: this repo (`rg`), package registries (npm / PyPI / …), configured MCP servers, installed skills / tools, and finally maintained OSS / templates — querying live documentation at decision time rather than trusting remembered package facts. **Step 2 (Decide and record a verdict)** evaluates candidates holistically and ends with one recognizable line — `Verdict: <Adopt|Extend|Compose|Build> — <package(s) or "custom"> — <evidence-based reason>` — which is the deliverable; a pass that searches but records no verdict line is incomplete. For non-trivial needs the search sweep is delegated to a research subagent (Full Mode); a single obvious need runs inline (Quick Mode). The skill also defines a "skip-research" handling rule for competing prompts — see the dedicated Q&A below.
+The workflow is defined as four steps. **Step 0** means stating the question in 2–3 sentences of plain chat text before the first tool call: the question, its type, and the constraints (language, deps, license, budget), so the user can redirect early. **step 1** means one `rg` / Glob pass over this repo. **step 2** means searching by question type, each with its own places to look and stopping point; live docs are queried at decision time. **step 3** means writing the report (`Scope searched`, `Found`, `Verdict`, `Still unknown`). Quick mode runs inline for a single obvious need; Full mode, for a non-trivial or plan question, spawns one `researcher` subagent per angle (3–5 angles, one adversarial, 10–15 searches / fetches each), then a gap check and at most one follow-up wave.
 
 ## How are candidates evaluated?
 
-Candidates are assessed across six qualitative dimensions: functionality (does it solve the need), maintenance (recent commits and releases), community (stars, contributors, issues), documentation (readability and completeness), license (permissive vs restrictive), and dependencies (number, weight, license compatibility). These are **lenses for prose interpretation, not scoring axes** — the skill explicitly forbids numeric scores (`8/10`), letter grades, and weighted point tables, because they manufacture false precision and bury the actual evidence. The honest output is a single evidence-backed verdict whose reason is grounded in concrete facts (last-commit date, the specific feature match) rather than adjectives like "popular" or "looks good".
+Evaluation is defined as prose backed by the evidence each question type names. For a Library / tool choice that means last release date, adoption (downloads, dependents, maintainers), license, dependency weight, and the specific feature match; for a paper or post, subject, premises, and how our situation differs. Every claim carries an as-of date, a source URL, and `read:` or `saw:`. Numeric scores and grades are forbidden; an empty result means the report writes the range searched.
 
 ## What is the Adopt verdict?
 
-Adopt is defined as the verdict when the search returns an exact match that is well-maintained and uses a permissive license like MIT or Apache. It refers to a zero-custom-code outcome — the agent installs the package and uses it directly. Adopt is the strongest signal that the search was successful and produces the most leverage from existing community work.
+Adopt is defined as the verdict for an established candidate that matches the need, and it is the caller's default. It refers to taking the candidate rather than writing our own; the narrower form takes one piece of the candidate, such as its parser or data model, inside our own control flow. Either one, when it adds a dependency, is meant to pass the caller's own dependency-intake step before it lands (the author's harness uses `implementation-chain`).
 
 ## When should I NOT use this skill?
 
-This skill should not be used on prototypes where the explicit goal is learning by re-implementing, on bug fixes that do not introduce new functionality, or on refactors that only restructure existing code. It is a kind of premature-implementation guard — its value depends on the work introducing genuinely new behavior. The skill also adds overhead, so trivial one-line utilities do not benefit.
+This skill is not needed when no outside fact is in play, such as a bug fix or refactor that adds no dependency, library or external behavior. It is defined as a decision-time check: its value depends on a choice resting on what exists outside — a library, a prior implementation, a paper, a spec, or current practice. For a single obvious need, Quick mode keeps the overhead to a few searches.
 
 ## What happens when the user explicitly says "skip research"?
 
-When the user prompt actively tells the agent to skip research ("just implement", "no time for research", "use whatever"), the skill does not silently comply. Skipping is itself a decision, so the agent **records it as a verdict line** — naming the tentative choice and stating the reason — rather than emitting nothing actionable. The pattern is: "Skipping research at your request — I haven't checked for an existing library for X. `Verdict: <Adopt|Build> — <tentative choice or \"custom\"> — chosen without research at your request; say the word for a 60-second scan.`" This keeps the user's intent intact while keeping the course-correct window open, because the user may not know an existing library exists. Recording the skip as a verdict (rather than a bare acknowledgement) means every search-first pass — even this one — ends with the same single structural marker, the verdict line, which a host harness can check mechanically. If the user replies "go ahead," the agent proceeds without searching; no full search runs.
+Skip handling is defined as one recorded line, then proceeding without searching: "Skipping research at your request — chosen without checking for an existing X; say the word for a 60-second scan." The line keeps the user's intent while leaving the course-correct window open, because the user may not know a library exists; the quick scan can still be requested before the agent builds.
 
 ## How does this skill relate to verification skills?
 
-The relationship means search-first is the front-end check (before code is written) while verification skills (test coverage, security review, code review) are the back-end checks (after code exists). The skill is also a kind of cost-saver — preventing reinvention is cheaper than reviewing reinvented code. Together they cover the front-to-back arc of agent-assisted development.
+The relationship means search-first is the front-end check (before code is written or a dependency is added) while verification skills (test coverage, security review, code review) are the back-end checks. The skill is also a kind of cost-saver: preventing reinvention is cheaper than reviewing reinvented code. A recommended dependency still passes the caller's dependency-intake step.
 
 ## Who is shimo4228?
 
-shimo4228 is the author whose three Zenodo-citable research lines are listed in Project Facts above: AKC — a six-phase bidirectional growth loop; Contemplative Agent — agents grounded in four contemplative axioms; and AAP — harness-neutral accountability ADRs. This skill is defined as scaffolding for the **Research** phase of AKC.
+shimo4228 is the author whose hub (https://github.com/shimo4228/shimo4228) lists five long-running practice lines with their concept DOIs, among them the three in Project Facts above: AKC — a six-phase loop that turns a coding agent's repeated experience into skills and rules; Contemplative Agent — agents grounded in four contemplative axioms; and AAP — harness-neutral accountability ADRs. This skill is defined as the **Research** phase of AKC; cite AKC by its concept DOI.

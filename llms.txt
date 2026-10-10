@@ -1,35 +1,42 @@
 # search-first
 
-> A Claude Code skill (MIT) that enforces a research-before-coding workflow. Before writing custom code, the agent articulates the requirement as text, searches by source priority (this repo, npm, PyPI, MCP registries, installed skills, GitHub), then records an informed Adopt / Extend / Compose / Build verdict. The skill is discipline (articulate → search → verdict), not search mechanism — the latter is delegated to the agent harness.
+> A Claude Code Agent Skill (MIT) that makes the agent look outside before it builds. When choosing a library, looking for a prior implementation, checking what a paper or official spec actually says, or about to write custom code, the agent searches registries, code, papers and official docs, then writes a dated, sourced report. The caller (the user, the main session, or a planning session) picks from it: Adopt a candidate, Adopt-part (one piece of a candidate), or Build what no candidate covers. The searcher reports and recommends; the caller decides.
+
+Status: active, synced one way from the author's Claude Code harness by `scripts/sync-from-local.sh`, and also shipped in the [akc-cycle](https://github.com/shimo4228/akc-cycle) plugin as `/akc-cycle:search-first`; this repository can trail the plugin between syncs.
 
 ## Core documentation
 
 - [llms-full.txt](llms-full.txt): self-contained Q&A reference for AI agents (Project Facts, Prior Research, 9 question-form H2 sections)
-- [README.md](README.md): human-facing narrative (install, decision matrix, worked example)
-- [SKILL.md](skills/search-first/SKILL.md): full skill specification — trigger conditions, the three-step discipline (Step 0 articulation → search by source priority → decide & record a verdict line), decision matrix, quick mode vs full mode, skip-research handling
+- [README.md](README.md): human-facing narrative (install, example report, how it works, triggers)
+- [SKILL.md](skills/search-first/SKILL.md): full skill specification — state the question in text → check this repo first → search by question type → report with a Verdict per need; Quick vs Full mode; "skip research" handling
 
 ## Architecture
 
-- Three-step discipline (not a search mechanism — the *how* of searching is delegated to the agent harness):
-  - **Step 0 — Articulate** the requirement as mandatory user-visible text before any tool call
-  - **Step 1 — Search by source priority**: this repo (`rg`) → package registries (npm / PyPI / …) → configured MCP servers → installed skills/tools → maintained OSS / templates; query live docs at decision time
-  - **Step 2 — Decide and record a Verdict line**: `Verdict: <Adopt|Extend|Compose|Build> — <package(s) or "custom"> — <evidence-based reason>`. A pass with no verdict line is incomplete.
-- 4-way decision matrix: **Adopt** (exact match, well-maintained, permissive license), **Extend** (partial match, thin wrapper), **Compose** (multiple small packages), **Build** (nothing suitable, informed by research)
-- Evaluation is qualitative prose — **no numeric scores, grades, or weighted tables** (they manufacture false precision)
-- Modes: **Quick Mode** (inline) for a single obvious need; **Full Mode** delegates the search sweep to whatever research subagent the harness provides
-- Skip-research handling: when the user explicitly says "don't research", skipping is itself a decision — the agent records it as a verdict line (`Verdict: <Adopt|Build> — <choice> — chosen without research at your request`) instead of a silent skip, preserving the user's intent while keeping the course-correct window open (and keeping a single structural marker — the verdict line — for every pass)
+- Look outside, report, let the caller pick:
+  - **0 — State the question in text**: 2–3 sentences of plain chat text before the first tool call (the question, its type, the constraints: language, existing deps, license, budget) so the user can redirect before effort is spent
+  - **1 — Check this repo first** with one `rg` / Glob pass
+  - **2 — Search by question type**, each with its own places to look and stopping point: Library / tool choice, Prior implementation, Claim of a paper / post, Spec / official behavior, State of practice, Primary-source check; query live docs at decision time
+  - **3 — Report**: every claim carries an as-of date and source URL and says whether the full text was read or a snippet seen (`read:` / `saw:`); when nothing turned up, the report writes the range searched. Sections: `Scope searched`, `Found`, `Verdict`, `Still unknown`
+- Verdict per need: **Adopt** `<candidate>` (the default when an established candidate matches), **Adopt-part** `<candidate: the piece>` (one piece of a library inside our own control flow), or **Build** with the gap no candidate fills. For research done for a plan, the research report leaves the Verdict out and the plan carries it
+- Judgement is prose backed by facts — **no numeric scores or grades**
+- Modes: **Quick** (inline) for a single obvious need; **Full** for a non-trivial question or any question asked for a plan — 3–5 angles, one adversarial, one `researcher` subagent per angle with a budget of 10–15 searches / fetches. The `researcher` subagent is not shipped here; the author's is [`agents/researcher.md`](https://github.com/shimo4228/claude-harness/blob/main/agents/researcher.md) in claude-harness
+- "Skip research": the agent records the skip in one line, offering a quick scan, and proceeds
+- Requirements: an agent with web search and fetch tools; no API key of its own (search terms leave the machine through the agent's web tools)
 
 ## Standard reference
 
 - [Agent Skill specification](https://agentskills.io/specification): the Claude Code skill format used by this repo
-- [SkillsMP marketplace](https://agentskills.io/specification): one-step install via `/skills add`
 
 ## Sibling skills
 
-- [llms-txt-writer](https://github.com/shimo4228/llms-txt-writer): writes AI-facing docs optimized for ChatGPT / Perplexity / Gemini citation
-- [skill-comply](https://github.com/shimo4228/skill-comply): measures whether agents actually follow skill / rule definitions (v0.3.0)
-- [context-sync](https://github.com/shimo4228/context-sync): audits and fixes project documentation roles
-- [skill-stocktake](https://github.com/shimo4228/skill-stocktake): quality audit for skills and commands
-- [rules-distill](https://github.com/shimo4228/rules-distill): scan installed skills, extract cross-cutting principles, and distill them into rules
-- [learn-eval](https://github.com/shimo4228/learn-eval): extract reusable patterns from sessions, self-evaluate quality, and save to the right location
-- [daily-research](https://github.com/shimo4228/daily-research): cron-driven daily research digest — theme selection, multi-stage web research, LLM-as-Judge evaluation
+- [akc-cycle](https://github.com/shimo4228/akc-cycle): installs this skill together with the rest of the Agent Knowledge Cycle as one Claude Code plugin
+- [Agent Knowledge Cycle](https://github.com/shimo4228/agent-knowledge-cycle): the reasoning behind each phase of the cycle, Research among them, recorded as dated design decisions
+- [learn-eval](https://github.com/shimo4228/learn-eval): extracts reusable patterns from a session, checks them against what happened, and saves each one where a future session will find it
+- [rules-distill](https://github.com/shimo4228/rules-distill): finds principles that recur across 2+ skills and drafts them as rules
+- [signal-first-research](https://github.com/shimo4228/signal-first-research): frozen design note on research intake filters that admit only information likely to change your next action
+- [skill-comply](https://github.com/shimo4228/skill-comply): runs generated scenarios and reports how often agents actually follow a skill, rule or agent definition
+- [llms-txt-writer](https://github.com/shimo4228/llms-txt-writer): writes AI-facing docs (llms.txt, llms-full.txt, FAQ, glossary)
+- [context-sync](https://github.com/shimo4228/context-sync): finds overlapping and stale project docs and moves each fact to one home
+- [skill-stocktake](https://github.com/shimo4228/skill-stocktake): audits installed skills for staleness, conflicts and redundancy, with a verdict per skill
+- [daily-research](https://github.com/shimo4228/daily-research): research feedback engine for your own repos — `claude -p` + macOS launchd writes daily reports per line
+- [shimo4228](https://github.com/shimo4228/shimo4228): the author's hub, with AKC next to the other practice lines and their DOIs
