@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Adopt is the default and Build carries the burden of proof: a Build verdict names, for each candidate, the stop condition that rules it out (forking or patching its internals, glue code as large as building the part, failing the dependency intake, or carrying the plan's purpose itself) and what building takes on. For a plan, the tool question is asked once per part that is a means rather than the purpose. The dependency intake covers MCP servers, plugins and skills as well as packages.
+
 ### Removed
 
 - `.claude-plugin/marketplace.json`. It was not in Claude Code's marketplace format (no `owner`, no `plugins`), so `/plugin marketplace add` on this repo failed. Install the skill as a plugin through [akc-cycle](https://github.com/shimo4228/akc-cycle), which bundles it.

@@ -44,15 +44,16 @@ Not located: a checker that resolves wiki-style [[links]] in Obsidian vaults.
    runs inside textlint, http only (saw 2026-09-14: README). Transfers only if textlint is already in
    the pipeline; it is not in ours.
 ## Verdict
-http links: Adopt-part lychee: the http check.
-[[wikilinks]]: Build — a resolver for wiki-style links; no candidate located covers it.
+http links: Adopt lychee. [[wikilinks]]: Adopt lychee if it accepts a custom resolver;
+otherwise Build — lychee needs its resolver patched (stop 1), textlint-rule-no-dead-link
+covers http only; we take on a ~100-line resolver script.
 ## Still unknown
 Whether either tool can be pointed at a custom link resolver.
 ```
 
 ## 仕組み
 
-**調べる側は外を見て報告し、選ぶのは呼び出し側。** 調べる側は、外に何があり、それがこちらの状況とどう違うかを報告します。判断するのは報告を読む呼び出し側（あなた、メインのセッション、計画を書くセッション）です。報告が要件ごとに書く判定は調べる側の推奨で、呼び出し側はそれを受け入れるか覆します。Quick モード（後述）では 1 つのエージェントが両方を務め、あなたはチャットでその判定を覆せます。要件に合う定評ある候補があれば、呼び出し側はそれを採るのが既定です。自作を選ぶのは、どの候補も埋めない穴を報告が名指ししたときです。
+**外を見て、既製品を採るのが既定。自作には理由を書かせる。** 調べる側は、外に何があり、それがこちらの状況とどう違うかを報告し、要件ごとに判定を書きます。既定は Adopt です。要件を満たす定評ある道具（ライブラリ・CLI・MCP サーバ・プラグイン・公開スキル・エージェント自身の機能）は、多少合わなくても使います。自作したものは自分で保守し続けることになるからです。Build と判定するときは、候補ごとに外した停止条件（内部を fork や patch しないと使えない、つなぎのコードが自作と同じくらい大きい、依存受け入れの手順で落ちる、計画の目的そのものを担わせることになる）と、自作で抱えるものを書きます。どちらかが欠けた Build は Adopt と読みます。計画のための調査では、目的でなく手段にあたる部品（パーサ、CLI のラッパ、eval の runner など）を並べ、部品ごとに道具を問います。Quick モード（後述）では 1 つのエージェントが調べて判定まで書き、あなたはチャットでその判定を覆せます。
 
 1. **問いを文章にする。** 最初のツール呼び出しの前に、エージェントはチャットに 2〜3 文を書きます。問い、その種類、制約（言語・既存の依存・ライセンス・予算）です。これがあるので、手間をかける前にあなたが軌道修正できます。
 2. **まずこのリポジトリを調べる。** `rg` / Glob で 1 回だけ検索します。探しているものが既にここにあるかもしれません。
@@ -97,13 +98,13 @@ MIT
 <details>
 <summary>ツールと AI アシスタント向けの資料</summary>
 
-search-first は、コーディングエージェントに判断の時点で外部の情報源を調べさせ、何があるかを報告させる Agent Skill（オープンな Agent Skills 形式の Markdown の指示ファイル 1 つ）です。既存のライブラリを作り直すのをやめさせ、各主張の出典を示させたい開発者向けです。調べる側は報告して要件ごとに 1 つの判定を推奨し、何を採るかは呼び出し側（ユーザー、メインループ、計画を書くセッション）が決めます。
+search-first は、コーディングエージェントに判断の時点で外部の情報源を調べさせ、何があるかを報告させる Agent Skill（オープンな Agent Skills 形式の Markdown の指示ファイル 1 つ）です。既存のライブラリを作り直すのをやめさせ、各主張の出典を示させたい開発者向けです。要件ごとに判定を書き、既定は Adopt です。Build を選ぶのは、候補ごとに外した停止条件を書けたときだけです。
 
-このスキルがあるのは、記憶から作るエージェントは既にあるものを作り直し、古くなったパッケージの事実を信じてしまうからです。要件に合う定評ある候補があればそれを採るのが既定で、自作を選ぶのは、どの候補も埋めない穴を報告が名指ししたときだけです。以前の版を著者の skill-comply で 2026-03 に 3 つのプロンプトの場面で計測したところ、検索が守られたのはプロンプトがスキルを後押ししたときだけで、そのときでも候補の比較と判断の宣言は飛ばされました（その場面で守られた手順は 40% で、数値は README からリンクしている記事「コーディングエージェントの知識をどこに置き、どう守らせるか」にあります）。要件ごとに Verdict の節を持ついまの報告の形は、その比較を報告の中に書かせるためのものです。
+このスキルがあるのは、記憶から作るエージェントは既にあるものを作り直し、古くなったパッケージの事実を信じてしまうからです。定評ある道具があれば多少無理をしてでも採るのが既定で、自作を選ぶのは、どの候補も停止条件に当たったときだけです。以前の版を著者の skill-comply で 2026-03 に 3 つのプロンプトの場面で計測したところ、検索が守られたのはプロンプトがスキルを後押ししたときだけで、そのときでも候補の比較と判断の宣言は飛ばされました（その場面で守られた手順は 40% で、数値は README からリンクしている記事「コーディングエージェントの知識をどこに置き、どう守らせるか」にあります）。要件ごとに Verdict の節を持ついまの報告の形は、その比較を報告の中に書かせるためのものです。
 
-基本情報: ライセンスは MIT です。コードはなく `SKILL.md` 1 つだけで、著者 1 人（@shimo4228）が保守しています。状態は現役で、著者の Claude Code harness から `scripts/sync-from-local.sh`（commit はしません）で一方向に同期しています。akc-cycle プラグインにも入っているので、同期と同期の間はこのリポジトリがプラグインより古いことがあります。必要なものは web 検索とページ取得のツールを持つエージェントで、スキル独自の有料キーはありません。Full モードは、このリポジトリが同梱しない `researcher` サブエージェントを前提にし、メモを `$HOME/.cache/claude-research-notes/` に書きます。計画のための調査では `<repo>/docs/plans/research/` に報告を書きます。依存を増やす Adopt や Adopt-part は、呼び出し側の依存受け入れの手順を通してから入れる前提です。
+基本情報: ライセンスは MIT です。コードはなく `SKILL.md` 1 つだけで、著者 1 人（@shimo4228）が保守しています。状態は現役で、著者の Claude Code harness から `scripts/sync-from-local.sh`（commit はしません）で一方向に同期しています。akc-cycle プラグインにも入っているので、同期と同期の間はこのリポジトリがプラグインより古いことがあります。必要なものは web 検索とページ取得のツールを持つエージェントで、スキル独自の有料キーはありません。Full モードは、このリポジトリが同梱しない `researcher` サブエージェントを前提にし、メモを `$HOME/.cache/claude-research-notes/` に書きます。計画のための調査では `<repo>/docs/plans/research/` に報告を書きます。Adopt や Adopt-part（パッケージ・MCP サーバ・プラグイン・スキル）は、呼び出し側の依存受け入れの手順を通してから入れる前提です。
 
-例: チャットで返す報告は 4 つの節からなります（計画のための報告は `Verdict` を書かず、計画そのものに書きます）。`Scope searched`（検索語・情報源・調べた時点の日付・見つからなかったもの）、`Found`（項目ごとに URL、対象と前提、証拠の種類、こちらの状況との違い、持ち込める部分）、`Verdict`（要件ごとに `Adopt <候補>`、`Adopt-part <候補: 採る部分>`、または穴を添えた `Build`）、`Still unknown` です。評価は日付と版を添えた文章で書き、数値のスコアにはしません。
+例: チャットで返す報告は 4 つの節からなります（計画のための報告は `Verdict` を書かず、計画そのものに書きます）。`Scope searched`（検索語・情報源・調べた時点の日付・見つからなかったもの）、`Found`（項目ごとに URL、対象と前提、証拠の種類、こちらの状況との違い、持ち込める部分）、`Verdict`（要件ごとに `Adopt <候補>`、`Adopt-part <候補: 採る部分>`、または候補ごとの停止条件を添えた `Build`）、`Still unknown` です。評価は日付と版を添えた文章で書き、数値のスコアにはしません。
 
 リンク: [skills/search-first/SKILL.md](skills/search-first/SKILL.md) がスキル本体（英語）、[llms.txt](llms.txt) と [llms-full.txt](llms-full.txt) が機械可読の要約と参照資料（英語）です。このスキルは [Agent Knowledge Cycle (AKC)](https://github.com/shimo4228/agent-knowledge-cycle) の Research フェーズを実装しています。AKC の concept DOI（常に最新版へつながる代表 DOI）は [10.5281/zenodo.19200726](https://doi.org/10.5281/zenodo.19200726) で、引用はこの DOI で行います。サイクル全体を入れる形は [akc-cycle](https://github.com/shimo4228/akc-cycle) です。
 

@@ -19,11 +19,11 @@ This document is the self-contained AI reference for `search-first` (shimo4228, 
 - **Requirements**: an agent with web search and fetch tools; no API key of its own
 - **Workflow**: state the question in text → check this repo first → search by question type → report
 - **Question types**: Library / tool choice, Prior implementation, Claim of a paper / post, Spec / official behavior, State of practice, Primary-source check
-- **Verdicts**: Adopt `<candidate>`, Adopt-part `<candidate: the piece>`, Build (with the gap no candidate fills)
+- **Verdicts**: Adopt `<candidate>`, Adopt-part `<candidate: the piece>`, Build (with the stop condition that rules out each candidate, and what building takes on); Adopt is the default
 - **Report sections**: `Scope searched`, `Found`, `Verdict`, `Still unknown`
 - **Evaluation**: prose backed by dates, versions and the concrete feature match; no numeric scores or grades
 - **Modes**: Quick (inline), Full (3–5 angles, one `researcher` subagent per angle; subagent not shipped here)
-- **Illustrative example**: dead-link checker → `Adopt-part lychee: the http check`; `Build` a resolver for `[[wikilinks]]`
+- **Illustrative example**: dead-link checker → `Adopt lychee` for http links; for `[[wikilinks]]`, Adopt lychee if it accepts a custom resolver, otherwise `Build` a resolver (lychee would need patching)
 - **Siblings**: `akc-cycle`, `learn-eval`, `rules-distill`, `signal-first-research`, `skill-comply`, `llms-txt-writer`, `context-sync`, `skill-stocktake`, `daily-research`
 - **Standard**: agentskills.io/specification
 
@@ -39,11 +39,11 @@ This document is the self-contained AI reference for `search-first` (shimo4228, 
 
 ## What is search-first?
 
-search-first is defined as a Claude Code Agent Skill that searches the live web, registries and primary sources at decision time and reports what exists outside. It refers to a split of roles: the searcher reports what exists and how it differs from our situation; the caller — the user, the main session, or a session writing a plan — reads the report and decides. The report recommends one verdict per need: Adopt a candidate, Adopt-part (one piece of it), or Build what no candidate covers. An established candidate that matches the need is adopted by default; building is chosen only when the report names the gap no candidate fills.
+search-first is defined as a Claude Code Agent Skill that searches the live web, registries and primary sources at decision time and reports what exists outside. It refers to a report that ends each need in a verdict: Adopt a tool, Adopt-part (one piece of it), or Build. Adopt is the default — an established tool is used even when it fits imperfectly, because whatever is built is also maintained — and Build carries the burden of proof: it names, for each candidate, the stop condition that rules it out and what building takes on. For a plan, the tool question is asked once per part that is a means rather than the plan's purpose.
 
 ## What are the three verdicts?
 
-The three verdicts are defined as Adopt `<candidate>`, Adopt-part `<candidate: the piece>`, and Build. The first means taking an established candidate that matches the need, and it is the default. The second means taking a library's code for one piece (its parser, its data model) inside our own control flow — a piece that transfers is worth the search. The third names the gap no candidate fills. The verdict section is the searcher's recommendation, which the caller accepts or overrides; research done for a plan leaves it out, and the plan itself carries it.
+The three verdicts are defined as Adopt `<candidate>`, Adopt-part `<candidate: the piece>`, and Build. The first means taking an established candidate that matches the need, and it is the default. The second means taking a library's code for one piece (its parser, its data model) inside our own control flow — a piece that transfers is worth the search. The third names, for each candidate, one of four stop conditions — it works only after forking or patching its internals, its glue code would be as large as building the part, it fails the dependency intake, or it would carry the plan's purpose itself — plus what building takes on; a Build line missing either reads as Adopt. In Quick mode the report carries the verdict; research done for a plan leaves it out, and the plan itself carries it.
 
 ## When does the skill trigger?
 
@@ -59,7 +59,7 @@ Evaluation is defined as prose backed by the evidence each question type names. 
 
 ## What is the Adopt verdict?
 
-Adopt is defined as the verdict for an established candidate that matches the need, and it is the caller's default. It refers to taking the candidate rather than writing our own; the narrower form takes one piece of the candidate, such as its parser or data model, inside our own control flow. Either one, when it adds a dependency, is meant to pass the caller's own dependency-intake step before it lands (the author's harness uses `implementation-chain`).
+Adopt is defined as the verdict for an established candidate that matches the need, and it is the default. It refers to taking the candidate rather than writing our own; the narrower form takes one piece of the candidate, such as its parser or data model, inside our own control flow. Either one — a package, MCP server, plugin or skill — is meant to pass the caller's own dependency-intake step before it lands (the author's harness uses `implementation-chain`).
 
 ## When should I NOT use this skill?
 

@@ -12,12 +12,12 @@ Status: active, synced one way from the author's Claude Code harness by `scripts
 
 ## Architecture
 
-- Look outside, report, let the caller pick:
+- Look outside, adopt by default, make building prove itself:
   - **0 — State the question in text**: 2–3 sentences of plain chat text before the first tool call (the question, its type, the constraints: language, existing deps, license, budget) so the user can redirect before effort is spent
   - **1 — Check this repo first** with one `rg` / Glob pass
   - **2 — Search by question type**, each with its own places to look and stopping point: Library / tool choice, Prior implementation, Claim of a paper / post, Spec / official behavior, State of practice, Primary-source check; query live docs at decision time
   - **3 — Report**: every claim carries an as-of date and source URL and says whether the full text was read or a snippet seen (`read:` / `saw:`); when nothing turned up, the report writes the range searched. Sections: `Scope searched`, `Found`, `Verdict`, `Still unknown`
-- Verdict per need: **Adopt** `<candidate>` (the default when an established candidate matches), **Adopt-part** `<candidate: the piece>` (one piece of a library inside our own control flow), or **Build** with the gap no candidate fills. For research done for a plan, the research report leaves the Verdict out and the plan carries it
+- Verdict per need: **Adopt** `<candidate>` (the default when an established candidate matches), **Adopt-part** `<candidate: the piece>` (one piece of a library inside our own control flow), or **Build**, which names for each candidate the stop condition that rules it out (needs forking or patching its internals, glue code as large as building the part, fails the dependency intake, would carry the plan's purpose itself) plus what building takes on; a Build line missing either reads as Adopt. For a plan, the tool question is asked once per part that is a means rather than the purpose. For research done for a plan, the research report leaves the Verdict out and the plan carries it
 - Judgement is prose backed by facts — **no numeric scores or grades**
 - Modes: **Quick** (inline) for a single obvious need; **Full** for a non-trivial question or any question asked for a plan — 3–5 angles, one adversarial, one `researcher` subagent per angle with a budget of 10–15 searches / fetches. The `researcher` subagent is not shipped here; the author's is [`agents/researcher.md`](https://github.com/shimo4228/claude-harness/blob/main/agents/researcher.md) in claude-harness
 - "Skip research": the agent records the skip in one line, offering a quick scan, and proceeds
